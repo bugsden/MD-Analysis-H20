@@ -1,1 +1,62 @@
-https://colab.research.google.com/drive/1zYiqGJ_QZkE81QU3P5FkKPq6vU3qMX_t#scrollTo=XLDiRv6DQgxc&line=37&uniqifier=1
+!pip install ezodf
+
+import numpy as np
+import matplotlib.pyplot as plt
+import ezodf
+
+file_path = '/content/average.ods'
+
+def read_data_from_ods(file_path, sheet_no=0):
+    # Initialize lists to store data
+    z_coords, averaged_values = [], []
+    
+    try:
+        doc = ezodf.opendoc(file_path)
+        sheet = doc.sheets[sheet_no]
+        
+        # Read data from rows
+        for i, row in enumerate(sheet.rows()):
+            if i <= 308:  # Read rows starting from index 0
+                # Access cell values using .value attribute
+                z_coords.append(float(row[0].value))  # Changed 'column' to 'row'
+                averaged_values.append(float(row[2].value))  # Changed 'column' to 'row'
+
+        # Choosing every 50-th data point to plot
+        n = 50  # Change this value to control the number of error bars
+        sampled_indices = np.arange(0, len(averaged_values), n)
+        sampled_z_coords = [z_coords[i] for i in sampled_indices]
+        sampled_values = [averaged_values[i] for i in sampled_indices]
+
+        # Calculating standard deviation (SD) and standard error for the sampled data
+        sd = np.std(sampled_values)
+        se = sd / np.sqrt(309)
+
+        # Plotting
+        plt.figure(figsize=(8, 6))
+
+        # Plotting averaged values with error bars representing SE of sampled data
+        plt.errorbar(sampled_z_coords, sampled_values, yerr=se, fmt='o', capsize=5, label='Averaged Values with SE')
+
+        plt.title('Averaged Values with Error Bars (SE)')
+        plt.xlabel('Z Coordinate')
+        plt.ylabel('Averaged Value')
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+
+        plt.ylim(31.5,34)
+        plt.plot(z_coords, averaged_values)  # Plot the entire data for comparison
+        plt.show()
+
+    except Exception as e:
+        print(f"Error reading data from {file_path}: {e}")
+        return None, None, None, None  # Return None for all values in case of an error
+    
+    if sheet is not None:  # Check if data was read successfully, this should be inside the except block
+        print(z_coords)
+        print(averaged_values)
+        print(se)  # Print the calculated standard error
+        print("diffusion coefficient =", 2.17616)
+
+# Call the function
+read_data_from_ods(file_path)
